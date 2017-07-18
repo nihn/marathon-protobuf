@@ -1,8 +1,10 @@
 import os
 
 from click import group, command, option, pass_obj, echo
-
-from maraproto.proto import marathon_pb2
+from maraproto.utils import (
+    apps_nodes_gen,
+    get_service_proto,
+)
 
 
 def unreachable_strategy_defined(service_proto):
@@ -17,25 +19,9 @@ def disable_unreachable_strategy(service_proto):
     strategy.ClearField('inactiveAfterSeconds')
 
 
-def get_service_proto(zk_client, zk_path):
-    service = marathon_pb2.ServiceDefinition()
-    service.ParseFromString(zk_client.get(zk_path)[0])
-    return service
-
-
 def is_resident(service_proto):
     return service_proto.residency.taskLostBehavior == \
            service_proto.residency.WAIT_FOREVER
-
-
-def apps_nodes_gen(zk_client):
-    apps_node = '/marathon/state/apps'
-
-    for apps_sub_node in zk_client.get_children(apps_node):
-        apps_sub_node_path = os.path.join(apps_node, apps_sub_node)
-
-        for node in zk_client.get_children(apps_sub_node_path):
-            yield os.path.join(apps_sub_node_path, node)
 
 
 @group('unreachable-strategy')
